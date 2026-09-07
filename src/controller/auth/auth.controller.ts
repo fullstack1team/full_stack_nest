@@ -212,6 +212,7 @@ export class AuthController {
         @Res({passthrough: true}) res: Response
     ){
         const user = req.user as any;
+        console.log('Naver Auth User:', user); // 💡 터미널 로그 확인용
         const naverMember:OAuthLoginDTO = {
             memberEmail: user.email,
             memberName: user.name,
@@ -236,11 +237,12 @@ export class AuthController {
                 path: "/",
                 sameSite: 'lax'
             })
-            return res.redirect("http://localhost:3000/")
+            // 💡 프론트엔드가 로그인 성공 상태를 인지할 수 있도록 query parameter 추가
+            return res.redirect("http://localhost:3000/?loginStatus=success");
         }
 
-        // 통합 계정 로그인 할 수 페이지 X
-        return res.redirect("http://localhost:3000/auth/merge")
+        // 실패 시 로그인 실패 status를 들고 로그인 페이지로 리다이렉트
+        return res.redirect(`http://localhost:3000/login?error=${status}`);
     }
 
     @ApiOperation({ summary: 'JWT 검증 테스트', description: '쿠키의 토큰을 읽어 유저 정보를 반환합니다.' })

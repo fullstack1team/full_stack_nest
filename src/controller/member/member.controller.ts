@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, UploadedFile, UseInterceptors, Logger } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, UploadedFile, UseInterceptors, Logger, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthProvider } from '@prisma/client';
 import { ApiResponse } from 'src/common/dto/api-response.dto';
-import type { MemberRegisterDTO, MemberUpdateDTO, MulterFile, NicknameChangeDTO } from 'src/domain/member/dto/member.dto';
+import type { MemberRegisterDTO, MemberUpdateDTO, MulterFile, NicknameChangeDTO, ChangePasswordDTO } from 'src/domain/member/dto/member.dto';
+import { JwtAuthGuard } from 'src/module/auth/guard/jwt-auth.guard';
 import { MemberResponse } from 'src/domain/member/dto/member.response';
 import { MemberService } from 'src/service/member/member.service';
 
@@ -81,6 +82,19 @@ export class MemberController {
             updatedMember
         );
     }
+
+    // 비밀번호 변경
+    @ApiOperation({ summary: "비밀번호 변경" })
+    @HttpCode(200)
+    @UseGuards(JwtAuthGuard) // 로그인된 사용자만 접근 가능
+    @Put(':id/password')
+    async changePassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ChangePasswordDTO,
+    ) {
+    await this.memberService.changePassword(id, dto);
+    return { message: '비밀번호가 성공적으로 변경되었습니다.' };
+}
 
     // 회원 탈퇴
     @ApiOperation({summary: "회원 탈퇴"})

@@ -131,6 +131,7 @@ export class MemberResponseDTO {
     memberProfile?: string;
 }
 
+// 닉네임 변경
 export class NicknameChangeDTO {
 
     @ApiProperty({
@@ -140,6 +141,27 @@ export class NicknameChangeDTO {
     @IsString()
     @IsNotEmpty()
     memberName: string;
+}
+
+// 비밀번호 확인 (현재 비밀번호 검증용)
+export class CheckPasswordDTO {
+  @ApiProperty({ example: "test123!@#", description: "현재 비밀번호" })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+}
+
+// 비밀번호 변경
+export class ChangePasswordDTO {
+  @ApiProperty({ example: "test123!@#", description: "현재 비밀번호" })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+
+  @ApiProperty({ example: "newPassword123!@#", description: "새로운 비밀번호" })
+  @IsString()
+  @IsNotEmpty()
+  newPassword!: string;
 }
 
 // 파일 입출력용 추가
