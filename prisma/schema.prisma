@@ -16,7 +16,7 @@ enum AuthProvider {
 
 model Member {
   id              Int      @id @default(autoincrement()) @map("member_id")
-  memberEmail     String   @unique @map("member_email")
+  memberEmail     String   @map("member_email")
   memberName      String   @map("member_name")
   memberNickname  String?  @unique @map("member_nickname") @db.VarChar(191)
   memberXp        Int      @default(0) @map("member_xp")

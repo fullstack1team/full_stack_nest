@@ -68,68 +68,67 @@ export class AuthService {
     }
 
     // 소셜 로그인
-    async socialLogin(socialMember:OAuthLoginDTO){
-        const {memberEmail, memberName, memberProfile, memberProvider, memberProviderId} = socialMember;
-        
-        // 1. memberProvider, memberProviderId 멤버로 조회
-        const foundSocialMember = await this.memberService.getMemberByMemberProvider(socialMember)
-        const foundLocalMember = await this.memberService.getMemberByMemberEmail(memberEmail)
-        
-        // 이미 가입된 회원이라면 -> 토큰 발급
-        if(foundSocialMember){
-            const payload: JwtPayload = {
-                id: foundSocialMember.id,
-                memberEmail: foundSocialMember.memberEmail
-            }
+    async socialLogin(socialMember: OAuthLoginDTO) {
+    const { memberEmail, memberName, memberProfile, memberProvider, memberProviderId } = socialMember;
 
-            const accessToken = await this.jwtTokenService.generateAccesstoken(payload);
-            const refreshToken = await this.jwtTokenService.generateRefreshToken(payload);
+    // 1. 이미 동일한 소셜(Google, Kakao, Naver 등) 및 ProviderID로 가입된 회원이 있는지 확인
+    const foundSocialMember = await this.memberService.getMemberByMemberProvider(socialMember);
 
-            return {
-                status: "LOGIN",
-                accessToken: accessToken,
-                refreshToken: refreshToken
-            }
-        }
-        
-        // 2. 같은 이메일의 LOCAL 계정이 있는 경우 예외 처리
-        if(foundLocalMember){
-            return {
-                status: "NEED_LINK",
-                memberProvider: AuthProvider.LOCAL
-            }
-        }
+    // 2. 이미 가입된 소셜 회원이면 즉시 로그인 (토큰 발급)
+    if (foundSocialMember) {
+        const payload: JwtPayload = {
+            id: foundSocialMember.id,
+            memberEmail: foundSocialMember.memberEmail
+        };
 
-        // 3. 최초 소셜 로그인 -> 회원가입 
-        // - 계정 병합은 로그인된 상태에서만 처리
-        const newMember: MemberRegisterDTO = {
-            memberEmail: memberEmail,
-            memberName: memberName ?? "멘탈이 약한 개복치",
-            memberProvider: memberProvider,
-            memberProviderId: memberProviderId,
-            memberProfile: memberProfile
-        }
+        const accessToken = await this.jwtTokenService.generateAccesstoken(payload);
+        const refreshToken = await this.jwtTokenService.generateRefreshToken(payload);
 
-        await this.memberService.join(newMember);
-        const newIsertedMember = await this.memberService.getMemberByMemberEmail(memberEmail)
-
-        // 4. 토큰 발급 응답
-        if(newIsertedMember){
-            const payload: JwtPayload = {
-                id: newIsertedMember.id,
-                memberEmail: newIsertedMember.memberEmail
-            }
-    
-            const accessToken = await this.jwtTokenService.generateAccesstoken(payload)
-            const refreshToken = await this.jwtTokenService.generateRefreshToken(payload)
-    
-            return {
-                status: "JOIN",
-                accessToken: accessToken,
-                refreshToken: refreshToken
-            }
-        }
-
-        return {status: "NOT_FOUND"}
+        return {
+            status: "LOGIN",
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        };
     }
+
+    // 3. 신규 소셜 회원가입 처리
+    // 닉네임 중복 방지를 위한 난수 생성
+    const baseName = memberName || "멘탈이 약한 개복치";
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const uniqueNickname = `${baseName}_${randomSuffix}`;
+
+    const newMember: MemberRegisterDTO = {
+        memberEmail: memberEmail,
+        memberName: uniqueNickname,
+        memberProvider: memberProvider,
+        memberProviderId: memberProviderId,
+        memberProfile: memberProfile
+    };
+
+    // DB에 회원 정보 저장
+    await this.memberService.join(newMember);
+
+    // 💡 [핵심] 이메일 대신 방금 가입한 Provider와 ProviderID 정보로 다시 정확히 조회
+    const newInsertedMember = await this.memberService.getMemberByMemberProvider(socialMember);
+
+    // 4. 회원가입 완료 후 바로 로그인 토큰 발급
+    if (newInsertedMember) {
+        const payload: JwtPayload = {
+            id: newInsertedMember.id,
+            memberEmail: newInsertedMember.memberEmail
+        };
+
+        const accessToken = await this.jwtTokenService.generateAccesstoken(payload);
+        const refreshToken = await this.jwtTokenService.generateRefreshToken(payload);
+
+        return {
+            status: "JOIN",
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        };
+    }
+
+    // 예외적인 실패
+    return { status: "NOT_FOUND" };
+}
 }

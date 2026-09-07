@@ -87,13 +87,35 @@ export class MemberRepository {
         })
     }
 
+    // 로컬(LOCAL) 가입자 중 해당 이메일을 사용하는 회원 조회 (일반 회원가입 중복 체크용)
+    async findLocalMemberByEmail(memberEmail: string): Promise<MemberEntity | null> {
+        return await this.prisma.member.findFirst({
+            where: {
+                memberEmail,
+                socials: {
+                    some: {
+                        memberProvider: 'LOCAL' // enum AuthProvider.LOCAL 사용 가능
+                    }
+                }
+            },
+            include: {
+                socials: true
+            }
+        });
+    }
+
     // 회원 비밀번호 수정
-    async updatePassword(id: number, memberPassword:string):Promise<void>{
-        await this.prisma.authAccount.update({
-            where: {id},
-            data: {memberPassword}
-        })
-    }  
+    async updatePassword(memberId: number, memberPassword: string): Promise<void> {
+    await this.prisma.authAccount.updateMany({
+        where: {
+        memberId: memberId, // member_id 외래키 조건
+        memberProvider: 'LOCAL', // 선택 사항: 로컬 로그인 계정만 업데이트
+        },
+        data: {
+        memberPassword: memberPassword,
+        },
+    });
+    }
 
     // 회원 정보 수정
     async updateProfile(id: number, member:MemberUpdateDTO):Promise<MemberEntity | null>{
