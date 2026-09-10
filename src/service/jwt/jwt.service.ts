@@ -16,7 +16,7 @@ export class JwtTokenService {
     async generateAccesstoken(payload: JwtPayload): Promise<string> {
         const accessToken = await this.jwtService.signAsync({
             id: payload.id,
-            email: payload.memberEmail
+            memberEmail: payload.memberEmail
         },
         {
             issuer: "sehwan",
@@ -30,7 +30,7 @@ export class JwtTokenService {
     async generateRefreshToken(payload: JwtPayload): Promise<string> {
         const refreshToken = await this.jwtService.signAsync({
             id: payload.id,
-            email: payload.memberEmail
+            memberEmail: payload.memberEmail
         },
         {
             issuer: "sehwan",
