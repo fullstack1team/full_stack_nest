@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, UseGuar
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation } from '@nestjs/swagger';
 import { PostCreateDTO, PostUpdatedDTO } from 'src/domain/post/dto/post.dto';
+import { OptionalJwtAuthGuard } from 'src/module/auth/guard/optional-jwt-auth.guard';
 import { PostService } from 'src/service/post/post.service';
 import type { AuthRequest } from 'src/type/auth.type';
 
@@ -12,7 +13,7 @@ export class PostController {
 
   // 게시글 전체 조회
   @ApiOperation({summary: "게시글 전체 조회"})
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(200)
   @Get() 
   async getPosts(@Req() req: AuthRequest) {
@@ -22,7 +23,7 @@ export class PostController {
 
   // 게시글 단일 조회
   @ApiOperation({summary: "게시글 단일 조회"})
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(200)
   @Get(":id") // /posts/:id
   async getPost(@Param("id") id: string, @Req() req: AuthRequest) {
