@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateFridgeDto,
@@ -194,10 +194,23 @@ export class FridgeService {
       include: { ingredient: true },
     });
 
+    // 냉장고에 재료 아무것도 없을 때 검증
+    if (fridgeItems.length === 0) {
+      throw new NotFoundException('냉장고에 등록된 재료가 없습니다.');
+    }
+
     // 주재료만 필터링
     const mainCandidates = fridgeItems.filter((item) =>
       ['육류', '해산물', '채소'].includes(item.ingredient.ingredientCategory),
     );
+
+    // 육류·해산물·채소만 주재료 후보로 골라서 랜덤 3개를 선택하기 때문
+    if (mainCandidates.length === 0) {
+      throw new NotFoundException('추천에 사용할 수 있는 주재료가 없습니다.');
+    }
+
+    // 30초 동안 🍳 레시피 생성 중...에 머무름
+    await new Promise((resolve) => setTimeout(resolve, 30000));
 
     // 랜덤 3개 선택
     const randomItems = getRandomIngredients(
@@ -214,9 +227,14 @@ export class FridgeService {
     // =========================
     // 1. OpenAI 호출
     // =========================
+
+    console.log('1️⃣ OpenAI 레시피 생성 시작');
+
     const aiResponse = await this.openaiService.getRecipe(
       ingredients.map((i) => i.name),
     );
+
+    console.log('2️⃣ OpenAI 레시피 생성 완료');
 
     if (!aiResponse) {
       return {
@@ -309,10 +327,11 @@ export class FridgeService {
     // =========================
     // 5. 대표 이미지
     // =========================
+    console.log('3️⃣ 대표 이미지 생성 시작');
     const image = await this.imageService.getFoodImage(
       'korean food ' + parsed.title,
     );
-
+    console.log('4️⃣ 대표 이미지 생성 완료');
     // =========================
     // 6. Step 분리
     // =========================
@@ -379,16 +398,20 @@ export class FridgeService {
     // =========================
     // 7. GPT step 키워드 생성
     // =========================
+    console.log('5️⃣ step 키워드 생성 시작');
     const keywords = await this.openaiService.getStepKeywords(steps);
+    console.log('6️⃣ step 키워드 생성 완료');
 
     // =========================
     // 8. step 이미지 생성
     // =========================
+    console.log('7️⃣ step 이미지 생성 시작');
     const stepImages = await Promise.all(
       keywords.map((keyword) =>
         this.imageService.getFoodImage(`${keyword} food`),
       ),
     );
+    console.log('8️⃣ step 이미지 생성 완료');
 
     // =========================
     // 9. fallback 처리
@@ -412,6 +435,8 @@ export class FridgeService {
           ? getRandomXp(200, 299)
           : getRandomXp(300, 500);
 
+    console.log('9️⃣ DB 레시피 저장 시작');
+
     const savedRecipe = await this.prisma.recipe.create({
       data: {
         recipeTitle: parsed.title,
@@ -424,9 +449,13 @@ export class FridgeService {
       },
     });
 
+    console.log('🔟 DB 레시피 저장 완료');
+
     console.log('ingredientList 최종:', ingredientList);
     console.log('savedRecipe:', savedRecipe);
 
+    console.log('✅ 추천 API 최종 반환 직전');
+    
     return {
       id: savedRecipe.id,
       recipeId: savedRecipe.id,
