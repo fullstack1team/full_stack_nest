@@ -166,39 +166,59 @@ export class PostRepository {
       ),
     ];
 
-    const ingredients: { id: number }[] = [];
+    return await this.prisma.$transaction(async (tx) => {
+      const ingredients: { id: number }[] = [];
 
-    for (const name of cleanedIngredientNames) {
-      let found = await this.prisma.ingredient.findFirst({
-        where: { ingredientName: name },
-        select: { id: true },
-      });
-
-      if (!found) {
-        found = await this.prisma.ingredient.create({
-          data: {
-            ingredientName: name,
-            ingredientCategory: '기타',
-          },
+      for (const name of cleanedIngredientNames) {
+        let found = await tx.ingredient.findFirst({
+          where: { ingredientName: name },
           select: { id: true },
         });
+
+        if (!found) {
+          found = await tx.ingredient.create({
+            data: {
+              ingredientName: name,
+              ingredientCategory: '기타',
+            },
+            select: { id: true },
+          });
+        }
+
+        ingredients.push(found);
       }
 
-      ingredients.push(found);
-    }
+      // 게시글 생성
+      const createdPost = await tx.post.create({
+        data: {
+          ...postData,
+          postXp: earnedXp,
+          postIngredientUsed: ingredients.length
+            ? {
+                create: ingredients.map((ingredient) => ({
+                  ingredientId: ingredient.id,
+                })),
+              }
+            : undefined,
+        },
+      });
 
-    return await this.prisma.post.create({
-      data: {
-        ...postData,
-        postXp: earnedXp,
-        postIngredientUsed: ingredients.length
-          ? {
-              create: ingredients.map((ingredient) => ({
-                ingredientId: ingredient.id,
-              })),
-            }
-          : undefined,
-      },
+      // 요리 완료 횟수 + 게시글 작성 횟수 +1
+      await tx.member.update({
+        where: {
+          id: postCreateDTO.memberId,
+        },
+        data: {
+          cookCount: {
+            increment: 1,
+          },
+          postCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      return createdPost;
     });
   }
 
