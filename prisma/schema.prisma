@@ -37,22 +37,23 @@ model Member {
   // memberUpdatedAt  DateTime  @updatedAt @map("member_updated_at")
   // memberLevel      Int       @default(1) @map("member_level")
 
-  socials       AuthAccount[]
-  post          Post[]
-  comment       Comment[]
-  savedRecipe   SavedRecipe[]
-  postLike      PostLike[]
-  myFridge      MyFridge[]
-  aiSavedRecipe AiSavedRecipe[]
+  socials                     AuthAccount[]
+  post                        Post[]
+  comment                     Comment[]
+  savedRecipe                 SavedRecipe[]
+  postLike                    PostLike[]
+  myFridge                    MyFridge[]
+  aiSavedRecipe               AiSavedRecipe[]
+  recipeRecommendationHistory RecipeRecommendationHistory[]
 
-  cookCount       Int      @default(0) @map("cook_count")       // 요리 완료 횟수
-  ingredientCount Int      @default(0) @map("ingredient_count") // 재료 등록 횟수
-  postCount       Int      @default(0) @map("post_count")       // 게시글 작성 횟수
-  
+  cookCount       Int @default(0) @map("cook_count") // 요리 완료 횟수
+  ingredientCount Int @default(0) @map("ingredient_count") // 재료 등록 횟수
+  postCount       Int @default(0) @map("post_count") // 게시글 작성 횟수
+
   // 대표 뱃지 설정을 위한 필드 (Optional)
-  mainBadgeId     Int?     @map("main_badge_id")
-  
-  userBadges      UserBadge[]
+  mainBadgeId Int? @map("main_badge_id")
+
+  userBadges UserBadge[]
 
   @@map("tbl_member")
 }
@@ -87,8 +88,8 @@ model Badge {
   badgeRewardXp       Int     @default(0) @map("badge_reward_xp")
   badgeConditionType  String? @map("badge_condition_type")
   badgeConditionValue Int?    @map("badge_condition_value")
-  unlockedDescription String? @db.Text @map("unlocked_description")
-  lockedDescription   String? @db.Text @map("locked_description")
+  unlockedDescription String? @map("unlocked_description") @db.Text
+  lockedDescription   String? @map("locked_description") @db.Text
   category            String? @map("badge_category")
 
   userBadge UserBadge[]
@@ -112,8 +113,8 @@ model UserBadge {
 model Recipe {
   id               Int       @id @default(autoincrement()) @map("recipe_id")
   recipeTitle      String    @map("recipe_title")
-  recipeDesc       String?   @db.Text @map("recipe_desc")
-  recipeImageUrl   String?   @db.Text @map("recipe_image_url")
+  recipeDesc       String?   @map("recipe_desc") @db.Text
+  recipeImageUrl   String?   @map("recipe_image_url") @db.Text
   cookTimeMin      Int?      @map("recipe_cook_time_min")
   recipeDifficulty String    @map("recipe_difficulty")
   recipeXp         Int       @default(0) @map("recipe_xp")
@@ -122,11 +123,27 @@ model Recipe {
   deletedAt        DateTime? @map("recipe_deleted_at")
   recipeCategory   String?   @map("recipe_category")
 
-  recipeIngredient RecipeIngredient[]
-  savedRecipe      SavedRecipe[]
-  post             Post[]
+  recipeIngredient      RecipeIngredient[]
+  savedRecipe           SavedRecipe[]
+  post                  Post[]
+  recommendationHistory RecipeRecommendationHistory[]
 
   @@map("tbl_recipe")
+}
+
+model RecipeRecommendationHistory {
+  id              Int      @id @default(autoincrement()) @map("recommendation_history_id")
+  memberId        Int      @map("member_id")
+  recipeId        Int      @map("recipe_id")
+  recipeTitle     String   @map("recipe_title")
+  normalizedTitle String   @map("normalized_title")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, normalizedTitle])
+  @@map("tbl_recipe_recommendation_history")
 }
 
 model RecipeIngredient {
@@ -180,7 +197,7 @@ model Post {
   id          Int       @id @default(autoincrement()) @map("post_id")
   memberId    Int       @map("member_id")
   postTitle   String    @map("post_title")
-  postContent String    @db.Text @map("post_content")
+  postContent String    @map("post_content") @db.Text
   createdAt   DateTime  @default(now()) @map("post_created_at")
   updatedAt   DateTime  @updatedAt @map("post_updated_at")
   postXp      Int       @default(0) @map("post_xp")
@@ -201,7 +218,7 @@ model Post {
 model PostImage {
   id         Int      @id @default(autoincrement()) @map("post_image_id")
   postId     Int      @map("post_id")
-  imageUrl   String   @db.Text @map("post_image_url")
+  imageUrl   String   @map("post_image_url") @db.Text
   imageOrder Int      @default(0) @map("post_image_order")
   createdAt  DateTime @default(now()) @map("post_image_create_at")
 
@@ -214,7 +231,7 @@ model Comment {
   id        Int      @id @default(autoincrement()) @map("comment_id")
   memberId  Int      @map("member_id")
   postId    Int      @map("post_id")
-  content   String   @db.VarChar(300) @map("comment_content")
+  content   String   @map("comment_content") @db.VarChar(300)
   createdAt DateTime @default(now()) @map("comment_created_at")
   updatedAt DateTime @updatedAt @map("comment_updated_at")
 
@@ -276,8 +293,8 @@ model AiSavedRecipe {
   category   String? @map("category")
   xp         Int     @default(0) @map("xp")
 
-  ingredients Json
-  steps       Json
+  ingredients        Json
+  steps              Json
   missingIngredients Json? @map("missing_ingredients")
 
   createdAt DateTime @default(now()) @map("created_at")

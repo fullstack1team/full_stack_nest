@@ -226,9 +226,6 @@ export class FridgeService {
       throw new NotFoundException('추천에 사용할 수 있는 주재료가 없습니다.');
     }
 
-    // 30초 동안 🍳 레시피 생성 중...에 머무름
-    await new Promise((resolve) => setTimeout(resolve, 30000));
-
     // 랜덤 3개 선택
     const randomItems = getRandomIngredients(
       mainCandidates,
@@ -245,36 +242,73 @@ export class FridgeService {
     // 1. OpenAI 호출
     // =========================
 
+    // =========================
+    // 1. 회원별 이전 추천 이력 조회
+    // =========================
+    const recommendationHistory =
+      await this.prisma.recipeRecommendationHistory.findMany({
+        where: {
+          memberId,
+        },
+        select: {
+          recipeTitle: true,
+          normalizedTitle: true,
+        },
+      });
 
-    const aiResponse = await this.openaiService.getRecipe(
-      ingredients.map((i) => i.name),
+    const excludedTitles = recommendationHistory.map(
+      (history) => history.recipeTitle,
     );
 
+    const normalizeRecipeTitle = (title: string) =>
+      String(title || '')
+        .replace(/\s/g, '')
+        .toLowerCase();
 
-    if (!aiResponse) {
-      return {
-        title: '추천 요리',
-        ingredients: [],
-        recipe: '레시피를 생성할 수 없습니다.',
-        image: '',
-        steps: [],
-        stepImages: [],
-      };
+    const existingTitleSet = new Set(
+      recommendationHistory.map((history) => history.normalizedTitle),
+    );
+
+    // =========================
+    // 2. OpenAI 호출 + 중복 검사
+    // =========================
+    let aiResponse = '';
+    let parsed: any = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      aiResponse = await this.openaiService.getRecipe(
+        ingredients.map((i) => i.name),
+        excludedTitles,
+      );
+
+      if (!aiResponse) {
+        continue;
+      }
+
+      try {
+        parsed = JSON.parse(aiResponse);
+      } catch (e) {
+        console.error('레시피 JSON 파싱 실패:', e);
+        parsed = null;
+        continue;
+      }
+
+      const generatedTitle = normalizeRecipeTitle(parsed?.title);
+
+      // 제목이 있고, 이 회원이 이전에 추천받지 않은 레시피면 통과
+      if (generatedTitle && !existingTitleSet.has(generatedTitle)) {
+        break;
+      }
+
+      console.log(
+        `⚠️ 회원 ${memberId} 중복 추천 감지: ${parsed?.title} (${attempt + 1}/3)`,
+      );
+
+      parsed = null;
     }
 
-    // =========================
-    // 2. JSON 파싱
-    // =========================
-    let parsed;
-
-    try {
-      parsed = JSON.parse(aiResponse);
-    } catch (e) {
-      parsed = {
-        title: '추천 요리',
-        ingredients: [],
-        recipe: aiResponse,
-      };
+    if (!parsed) {
+      throw new Error('중복되지 않는 새로운 추천 레시피 생성에 실패했습니다.');
     }
 
     const recipeText = parsed.recipe || '';
@@ -446,7 +480,6 @@ export class FridgeService {
           ? getRandomXp(200, 299)
           : getRandomXp(300, 500);
 
-
     const savedRecipe = await this.prisma.recipe.create({
       data: {
         recipeTitle: parsed.title,
@@ -459,6 +492,14 @@ export class FridgeService {
       },
     });
 
+    await this.prisma.recipeRecommendationHistory.create({
+      data: {
+        memberId,
+        recipeId: savedRecipe.id,
+        recipeTitle: savedRecipe.recipeTitle,
+        normalizedTitle: normalizeRecipeTitle(savedRecipe.recipeTitle),
+      },
+    });
 
     console.log('✅ 추천 API 최종 반환 직전');
 

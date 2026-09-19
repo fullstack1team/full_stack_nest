@@ -10,11 +10,29 @@ export class OpenaiService {
   // =========================
   // 레시피 생성 (유지)
   // =========================
-  async getRecipe(ingredients: string[]): Promise<string> {
+  async getRecipe(
+    ingredients: string[],
+    excludedTitles: string[] = [],
+  ): Promise<string> {
+    const excludedRecipeText =
+      excludedTitles.length > 0
+        ? excludedTitles.map((title) => `- ${title}`).join('\n')
+        : '- 없음';
+
     const prompt = `
 다음 재료를 반드시 모두 포함해서 하나의 완성된 요리를 만들어라:
 
 ${ingredients.map((i) => `- ${i}`).join('\n')}
+
+이 사용자가 이전에 추천받은 요리 목록:
+${excludedRecipeText}
+
+🔥 중복 방지 규칙:
+
+1. 위 "이전에 추천받은 요리 목록"에 있는 요리와 동일한 요리를 절대 생성하지 마라.
+2. 띄어쓰기나 표현만 조금 바꾼 사실상 동일한 요리도 생성하지 마라.
+3. 같은 재료를 사용하더라도 기존 요리와 다른 조리법이나 다른 형태의 새로운 요리를 만들어라.
+4. 이전 추천 목록에 없는 새로운 요리 이름을 만들어라.
 
 🔥 매우 중요 규칙:
 
@@ -29,7 +47,7 @@ ${ingredients.map((i) => `- ${i}`).join('\n')}
    - 육류 / 해산물 / 채소 → 주재료
    - 그 외 → "기타"
 
-6. 절대 문자열 배열 금지 ❌
+6. 절대 문자열 배열 금지
    → 반드시 객체 배열로 반환해야 한다
 
 7. 레시피는 반드시 단계별로 상세하게 작성 (1. 2. 3. 형식)
