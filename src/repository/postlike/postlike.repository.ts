@@ -18,6 +18,13 @@ export class PostLikeRepository {
     })
   }
 
+  // 해당 유저가 누른 총 좋아요 개수 조회 (뱃지 검사용)
+  async countByMemberId(memberId: number): Promise<number> {
+    return this.prisma.postLike.count({
+      where: { memberId },
+    });
+  }
+  
   // 좋아요 생성
   async createPostLike(memberId: number, postId: number) {
     return this.prisma.postLike.create({

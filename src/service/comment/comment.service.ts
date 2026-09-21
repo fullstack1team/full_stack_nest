@@ -7,29 +7,90 @@ import {
 import CommentException from 'src/exception/exception.comment';
 import { CommentRepository } from 'src/repository/comment/comment.repository';
 import { PostRepository } from 'src/repository/post/post.repository';
+import { PrismaService } from 'src/service/prisma/prisma.service'; 
+import { Badge } from '@prisma/client'; 
 
-// 비지니스 로직 담당
 @Injectable()
 export class CommentService {
   constructor(
     private readonly commentRepository: CommentRepository,
     private readonly postRepository: PostRepository,
+    private readonly prisma: PrismaService, 
   ) {}
 
-  // 댓글 생성
+  // 댓글 생성 (수정)
   async createComment(
     commentCreateDTO: CommentCreateServiceDTO,
-  ): Promise<void> {
+  ) {
+    // 댓글 생성
     await this.commentRepository.save(commentCreateDTO);
+
+    // 댓글 작성 뱃지 해금 조건 검사
+    const unlockedBadges = await this.checkCommentBadges(commentCreateDTO.memberId);
+
+    return {
+      message: '댓글 작성 완료',
+      unlockedBadges, // 새로 해금된 뱃지 목록 전달
+    };
   }
 
-  // 게시글별 댓글 조회
+  // 댓글 작성 뱃지 해금 검사 메서드
+  private async checkCommentBadges(memberId: number): Promise<Badge[]> {
+    // ① 해당 유저가 작성한 총 댓글 개수 조회
+    const commentCount = await this.prisma.comment.count({
+      where: { memberId },
+    });
+
+    // ② COMMENT_WRITE_COUNT 조건 중 현재 작성 개수 이하인 뱃지 조회
+    const eligibleBadges = await this.prisma.badge.findMany({
+      where: {
+        badgeConditionType: 'COMMENT_WRITE_COUNT',
+        badgeConditionValue: { lte: commentCount },
+      },
+    });
+
+    const newlyUnlockedBadges: Badge[] = [];
+
+    // ③ 미획득 뱃지 확인 및 지급
+    for (const badge of eligibleBadges) {
+      const alreadyUnlocked = await this.prisma.userBadge.findUnique({
+        where: {
+          memberId_badgeId: {
+            memberId,
+            badgeId: badge.id,
+          },
+        },
+      });
+
+      if (!alreadyUnlocked) {
+        await this.prisma.$transaction([
+          // 뱃지 부여
+          this.prisma.userBadge.create({
+            data: {
+              memberId,
+              badgeId: badge.id,
+            },
+          }),
+          // XP 증가
+          this.prisma.member.update({
+            where: { id: memberId },
+            data: { memberXp: { increment: badge.badgeRewardXp } },
+          }),
+        ]);
+
+        newlyUnlockedBadges.push(badge);
+      }
+    }
+
+    return newlyUnlockedBadges;
+  }
+
+  // 게시글별 댓글 조회 (기존 동일)
   async getCommentByPostId(postId: number) {
     return await this.commentRepository.findCommentsByPostId(postId);
   }
 
-  // 댓글 수정
-  // 내 댓글만 수정 가능
+  // 댓글 수정 (기존 동일)
   async updateComment(
     id: number,
     memberId: number,
@@ -48,9 +109,7 @@ export class CommentService {
     await this.commentRepository.modify(id, commentUpdateDTO);
   }
 
-  // 댓글 단일 삭제
-  // 댓글 작성자 본인 삭제 가능
-  // 게시글 작성자면 남 댓글도 삭제 가능
+  // 댓글 단일 삭제 (기존 동일)
   async deleteComment(id: number, memberId: number): Promise<void> {
     const foundComment = await this.commentRepository.findCommentById(id);
 
@@ -76,8 +135,7 @@ export class CommentService {
     await this.commentRepository.remove(id);
   }
 
-  // 게시글별 댓글 전체 삭제
-  // 내 게시글일 때만 전체 삭제 가능
+  // 게시글별 댓글 전체 삭제 (기존 동일)
   async deleteAllCommentsByPostId(
     postId: number,
     memberId: number,
@@ -102,9 +160,7 @@ export class CommentService {
     await this.commentRepository.removeAllByPostId(postId);
   }
 
-  // 선택한 댓글들 삭제(체크박스로 선택 삭제)
-  // 내가 선택한 댓글들이 전부 내 댓글이면 삭제 가능
-  // 내가 그 게시글 작성자이고, 선택한 댓글들이 모두 같은 게시글 소속이면 삭제 가능
+  // 선택한 댓글들 삭제 (기존 동일)
   async deleteSelectedComments(
     commentIds: number[],
     memberId: number,
@@ -116,7 +172,6 @@ export class CommentService {
       throw new CommentException('삭제할 댓글이 없습니다.');
     }
 
-    // 요청한 개수와 조회된 개수가 다르면 잘못된 id 포함된 것
     if (foundComments.length !== commentIds.length) {
       throw new CommentException('일부 댓글을 찾을 수 없습니다.');
     }
@@ -130,7 +185,6 @@ export class CommentService {
       return;
     }
 
-    // 전부 내 댓글이 아니면, 같은 게시글에 속한 댓글들인지 확인
     const firstPostId = foundComments[0].postId;
     const samePost = foundComments.every(
       (comment) => comment.postId === firstPostId,
@@ -156,6 +210,7 @@ export class CommentService {
 
     await this.commentRepository.removeSelected(commentIds);
   }
+}
 
   // async deleteSelectedComments(commentIds: number[], memberId: number): Promise<void> {
   //   const foundComments =
@@ -173,4 +228,4 @@ export class CommentService {
 
   //   await this.commentRepository.removeSelected(commentIds);
   // }
-}
+

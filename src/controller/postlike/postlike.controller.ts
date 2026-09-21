@@ -17,10 +17,16 @@ export class PostlikeController {
   @HttpCode(201)
   @Post()
   async create(@Req() req: AuthRequest, @Body() postLikeCreateDTO: PostLikeDTO) {
-    return this.postLikeService.createPostLike({
+    const result = await this.postLikeService.createPostLike({
       memberId: req.user.id,
-      postId: postLikeCreateDTO.postId
+      postId: postLikeCreateDTO.postId,
     });
+
+    return {
+      message: '좋아요가 등록되었습니다.', 
+      like: result.like,
+      unlockedBadges: result.unlockedBadges, 
+    };
   }
 
   // 좋아요 삭제

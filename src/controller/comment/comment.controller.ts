@@ -22,8 +22,12 @@ export class CommentController {
       content: commentCreateDTO.content
     }
     
-    await this.commentService.createComment(commentCreateServiceDTO)
-    return { message: "댓글이 생성되었습니다."}
+    const result = await this.commentService.createComment(commentCreateServiceDTO);
+
+    return {
+        message: "댓글이 생성되었습니다.", 
+        unlockedBadges: result.unlockedBadges, 
+      };
 
   }
 
