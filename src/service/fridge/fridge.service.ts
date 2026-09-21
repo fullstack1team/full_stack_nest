@@ -101,9 +101,15 @@ export class FridgeService {
     });
 
     // 💡 [추가] 뱃지 조건 충족 여부 바로 검사 및 해금 처리
-    await this.badgeService.checkAndAwardBadge(memberId, 'INGREDIENT_COUNT');
+    const unlockedBadges = await this.badgeService.checkAndAwardBadge(
+      memberId, 
+      'INGREDIENT_COUNT'
+    ) || [];
 
-    return savedItem;
+    return {
+      ...savedItem,
+      unlockedBadges, 
+    };
   }
 
   // =========================
