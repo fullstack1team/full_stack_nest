@@ -130,7 +130,7 @@ async function main() {
     {
         badgeName: "맛있는 첫 저장",
         badgeDescription: "첫 레시피 저장",
-        badgeImageUrl: "recipe-scrap", // 사진 구하기.
+        badgeImageUrl: "delicious-first-save", // 사진 구하기.
         badgeRewardXp: 30,
         badgeConditionType: "RECIPE_SCRAP_COUNT",
         badgeConditionValue: 1,
@@ -152,7 +152,7 @@ async function main() {
     {
         badgeName: "북마크 실천가",
         badgeDescription: "저장한 레시피로 10회 요리 완성",
-        badgeImageUrl: "bookmark-practicer", // 사진 구하기.
+        badgeImageUrl: "bookmark-achiever", // 사진 구하기.
         badgeRewardXp: 80,
         badgeConditionType: "SCRAPPED_RECIPE_COOK_COUNT",
         badgeConditionValue: 10,
@@ -163,7 +163,7 @@ async function main() {
     {
         badgeName: "맛있는 첫인사",
         badgeDescription: "첫 게시글 작성",
-        badgeImageUrl: "delicious-smile", // 사진 구하기.
+        badgeImageUrl: "yummy-first-hi", // 사진 구하기.
         badgeRewardXp: 30,
         badgeConditionType: "POST_COUNT",
         badgeConditionValue: 1,
@@ -174,7 +174,7 @@ async function main() {
     {
         badgeName: "커뮤니티 단골",
         badgeDescription: "게시글 10개 작성",
-        badgeImageUrl: "community-visitor", // 사진 구하기.
+        badgeImageUrl: "badge-community-regular", // 사진 구하기.
         badgeRewardXp: 50,
         badgeConditionType: "POST_COUNT",
         badgeConditionValue: 10,
@@ -196,7 +196,7 @@ async function main() {
     {
         badgeName: "반응 좋은 이웃",
         badgeDescription: "댓글 30개 작성",
-        badgeImageUrl: "good-neighbor", // 사진 구하기 
+        badgeImageUrl: "popular-neighbor", // 사진 구하기 
         badgeRewardXp: 80,
         badgeConditionType: "COMMENT_WRITE_COUNT",
         badgeConditionValue: 30,
@@ -217,7 +217,7 @@ async function main() {
     },{
         badgeName: "끝까지 끓인 사람",
         badgeDescription: "챌린지 1회 완주",
-        badgeImageUrl: "finally-complete", //사진 구하기
+        badgeImageUrl: "cooking-finisher", //사진 구하기
         badgeRewardXp: 100,
         badgeConditionType: "CHALLENGE_COMPLETE_COUNT",
         badgeConditionValue: 1,
