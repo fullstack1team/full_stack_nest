@@ -232,7 +232,7 @@ async function main() {
   for (const item of badgeData) {
     await prisma.badge.upsert({
       where: { badgeName: item.badgeName }, 
-      update: {}, 
+      update: item, 
       create: item,
     });
   }
