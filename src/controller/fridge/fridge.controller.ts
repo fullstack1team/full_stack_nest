@@ -29,15 +29,21 @@ export class FridgeController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Post()
-  create(@Req() req, @Body() dto: CreateFridgeDto) {
-    const memberId = req.user.id; // jwt.strategy 만들어진 이후에 밑줄 삭제 및 이 줄 활성화
+    @Post()
+    async create(@Req() req, @Body() dto: CreateFridgeDto) {
+      const memberId = req.user.id;
 
-    return this.fridgeService.create({
-      ...dto,
-      memberId,
-    });
-  }
+      const result = await this.fridgeService.create({
+        ...dto,
+        memberId,
+      });
+
+      return {
+        message: '식재료가 등록되었습니다.',
+        data: result,
+        unlockedBadges: result.unlockedBadges || [], // 💡 실시간 뱃지 해금 팝업용
+      };
+    }
 
   @UseGuards(AuthGuard('jwt'))
   @Get()

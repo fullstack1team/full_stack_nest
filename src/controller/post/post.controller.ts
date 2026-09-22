@@ -38,10 +38,16 @@ export class PostController {
   @HttpCode(201)
   @Post("")
   async create(@Req() req: AuthRequest, @Body() postCreateDTO: PostCreateDTO) {
-    return await this.postService.createPost({
+    const result = await this.postService.createPost({
       ...postCreateDTO,
-      memberId: req.user.id
-    })
+      memberId: req.user.id,
+    });
+
+    return {
+      message: "게시글이 작성되었습니다.",
+      data: result,
+      unlockedBadges: result.unlockedBadges || [],
+    };
   }
 
   // 게시글 수정

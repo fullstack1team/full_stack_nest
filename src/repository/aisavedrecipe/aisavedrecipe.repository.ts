@@ -4,7 +4,7 @@ import { PrismaService } from "src/service/prisma/prisma.service";
 
 @Injectable()
 export class AiSavedRecipeRepository {
-  constructor(private readonly prisma: PrismaService){;}
+  constructor(private readonly prisma: PrismaService) {} // 오타 수정 (중괄호 뒤의 세미콜론 제거)
 
   // 저장
   async save(createAiSavedRecipeDTO: CreateAiSavedRecipeWithMemberDTO) {
@@ -21,17 +21,23 @@ export class AiSavedRecipeRepository {
         ingredients: createAiSavedRecipeDTO.ingredients,
         steps: createAiSavedRecipeDTO.steps,
         missingIngredients: createAiSavedRecipeDTO.missingIngredients,
+      },
+    });
+  }
 
-      }
-    })
+  // 💡 [신규 추가] 해당 유저가 저장한 전체 레시피 개수 조회
+  async countByMemberId(memberId: number): Promise<number> {
+    return await this.prisma.aiSavedRecipe.count({
+      where: { memberId },
+    });
   }
 
   // 회원별 목록 전체 조회
   async findAllByMemberId(memberId: number) {
     return await this.prisma.aiSavedRecipe.findMany({
       where: { memberId },
-      orderBy: { createdAt: 'desc' }
-    })
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   // 상세 조회
@@ -39,9 +45,9 @@ export class AiSavedRecipeRepository {
     return await this.prisma.aiSavedRecipe.findFirst({
       where: { 
         id,
-        memberId
-      }
-    })
+        memberId,
+      },
+    });
   }
 
   // 삭제
@@ -49,9 +55,8 @@ export class AiSavedRecipeRepository {
     return await this.prisma.aiSavedRecipe.deleteMany({
       where: { 
         id,
-        memberId
-      } 
-    })
+        memberId,
+      },
+    });
   }
-
 }

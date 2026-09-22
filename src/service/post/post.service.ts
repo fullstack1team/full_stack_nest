@@ -63,17 +63,24 @@ export class PostService {
 
     const createdPost = await this.postRepository.save(postCreateDTO, earnedXp);
 
-    await this.badgeService.checkAndAwardBadge(
+    // 각각의 뱃지 검사 후 해금된 뱃지 목록 수집
+    const cookBadges = await this.badgeService.checkAndAwardBadge(
       postCreateDTO.memberId,
       'COOK_COUNT',
-    );
+    ) || [];
 
-    await this.badgeService.checkAndAwardBadge(
+    const postBadges = await this.badgeService.checkAndAwardBadge(
       postCreateDTO.memberId,
       'POST_COUNT',
-    );
+    ) || [];
 
-    return createdPost;
+    // 새로 해금된 뱃지들을 하나로 합침
+    const unlockedBadges = [...cookBadges, ...postBadges];
+
+    return {
+      ...createdPost,
+      unlockedBadges,
+    };
   }
 
   // 게시글 수정

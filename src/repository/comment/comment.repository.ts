@@ -30,6 +30,13 @@ export class CommentRepository {
     });
   }
 
+  // 해당 유저가 작성한 전체 댓글 개수 조회 (뱃지 검사용)
+  async countByMemberId(memberId: number): Promise<number> {
+    return await this.prisma.comment.count({
+      where: { memberId },
+    });
+  }
+
   // 게시글별 댓글 조회
   async findCommentsByPostId(postId: number) {
     return await this.prisma.comment.findMany({
