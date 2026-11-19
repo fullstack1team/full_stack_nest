@@ -178,11 +178,11 @@ export class AuthController {
         path: '/',
         sameSite: 'lax',
       });
-      return res.redirect('http://localhost:3000/');
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/`);
     }
 
     // 통합 계정 로그인 할 수 페이지 X
-    return res.redirect('http://localhost:3000/auth/merge');
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/merge`);
   }
 
   @Get('kakao')
@@ -221,11 +221,11 @@ export class AuthController {
         path: '/',
         sameSite: 'lax',
       });
-      return res.redirect('http://localhost:3000/');
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/`);
     }
 
     // 통합 계정 로그인 할 수 페이지 X
-    return res.redirect('http://localhost:3000/auth/merge');
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/merge`);
   }
 
   @Get('naver')
@@ -266,11 +266,11 @@ export class AuthController {
         sameSite: 'lax',
       });
       // 💡 프론트엔드가 로그인 성공 상태를 인지할 수 있도록 query parameter 추가
-      return res.redirect('http://localhost:3000/?loginStatus=success');
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/?loginStatus=success`);
     }
 
     // 실패 시 로그인 실패 status를 들고 로그인 페이지로 리다이렉트
-    return res.redirect(`http://localhost:3000/login?error=${status}`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=${status}`);
   }
 
   @ApiOperation({
